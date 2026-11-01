@@ -1431,6 +1431,21 @@ export const fpdApi = {
       return [];
     }
   },
+    async createCandidature(payload: {
+    nom: string;
+    prenom: string;
+    email: string;
+    telephone: string;
+    dateNaissance: string;
+    genre: string;
+    adresse: string;
+    niveauEtude: string;
+    sessionId?: number;
+    motivation?: string;
+  }) {
+    const { data } = await api.post("/fpd/candidatures", payload);
+    return data;
+  },
 };
 
 /* ============================================

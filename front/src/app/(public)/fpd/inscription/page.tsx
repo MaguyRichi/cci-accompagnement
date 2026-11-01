@@ -3,7 +3,6 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { fpdApi } from "@/lib/api-services";
 import Icon from "@/components/ui/Icon";
 
@@ -109,27 +108,27 @@ function InscriptionContent() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input label="Nom *" value={form.nom} onChange={(v) => setForm({ ...form, nom: v })} required />
-            <Input label="Prénom *" value={form.prenom} onChange={(v) => setForm({ ...form, prenom: v })} required />
-            <Input label="Email *" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} required />
-            <Input label="Téléphone *" value={form.telephone} onChange={(v) => setForm({ ...form, telephone: v })} required />
-            <Input label="Date de naissance *" type="date" value={form.dateNaissance} onChange={(v) => setForm({ ...form, dateNaissance: v })} required />
+            <Input label="Nom *" value={form.nom} onChange={(v: string) => setForm({ ...form, nom: v })} required />
+            <Input label="Prénom *" value={form.prenom} onChange={(v: string) => setForm({ ...form, prenom: v })} required />
+            <Input label="Email *" type="email" value={form.email} onChange={(v: string) => setForm({ ...form, email: v })} required />
+            <Input label="Téléphone *" value={form.telephone} onChange={(v: string) => setForm({ ...form, telephone: v })} required />
+            <Input label="Date de naissance *" type="date" value={form.dateNaissance} onChange={(v: string) => setForm({ ...form, dateNaissance: v })} required />
             
             <div className="flex flex-col gap-1.5">
               <label className="text-label-sm font-semibold text-on-surface">Genre *</label>
-              <select value={form.genre} onChange={(e) => setForm({ ...form, genre: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-surface-container-low border border-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all text-body-sm">
+              <select value={form.genre} onChange={(e: any) => setForm({ ...form, genre: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-surface-container-low border border-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all text-body-sm">
                 <option value="M">Masculin</option>
                 <option value="F">Féminin</option>
               </select>
             </div>
           </div>
 
-          <Input label="Adresse *" value={form.adresse} onChange={(v) => setForm({ ...form, adresse: v })} required />
+          <Input label="Adresse *" value={form.adresse} onChange={(v: string) => setForm({ ...form, adresse: v })} required />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-label-sm font-semibold text-on-surface">Niveau d'étude *</label>
-              <select value={form.niveauEtude} onChange={(e) => setForm({ ...form, niveauEtude: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-surface-container-low border border-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all text-body-sm">
+              <select value={form.niveauEtude} onChange={(e: any) => setForm({ ...form, niveauEtude: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-surface-container-low border border-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all text-body-sm">
                 <option value="CEPE">CEPE</option>
                 <option value="BEPC">BEPC</option>
                 <option value="BAC">BAC</option>
@@ -140,7 +139,7 @@ function InscriptionContent() {
 
             <div className="flex flex-col gap-1.5">
               <label className="text-label-sm font-semibold text-on-surface">Session visée</label>
-              <select value={form.sessionId} onChange={(e) => setForm({ ...form, sessionId: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-surface-container-low border border-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all text-body-sm">
+              <select value={form.sessionId} onChange={(e: any) => setForm({ ...form, sessionId: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-surface-container-low border border-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all text-body-sm">
                 <option value="">Je ne sais pas encore</option>
                 {sessions.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -155,7 +154,7 @@ function InscriptionContent() {
             <label className="text-label-sm font-semibold text-on-surface">Motivation (optionnel)</label>
             <textarea
               value={form.motivation}
-              onChange={(e) => setForm({ ...form, motivation: e.target.value })}
+              onChange={(e: any) => setForm({ ...form, motivation: e.target.value })}
               rows={4}
               className="w-full px-4 py-3 rounded-xl bg-surface-container-low border border-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all text-body-sm resize-none"
               placeholder="Pourquoi souhaitez-vous rejoindre cette formation ?"
@@ -183,14 +182,14 @@ function InscriptionContent() {
   );
 }
 
-function Input({ label, value, onChange, type = "text", required = false }: any) {
+function Input({ label, value, onChange, type = "text", required = false }: { label: string, value: string, onChange: (v: string) => void, type?: string, required?: boolean }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-label-sm font-semibold text-on-surface">{label}</label>
       <input
         type={type}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e: any) => onChange(e.target.value)}
         required={required}
         className="w-full px-4 py-3 rounded-xl bg-surface-container-low border border-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all text-body-sm"
       />

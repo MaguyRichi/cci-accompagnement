@@ -317,17 +317,17 @@ export default function AdminFpdPage() {
               <Input
                 label="Nom de la session *"
                 value={sessionForm.nom}
-                onChange={(v) => setSessionForm({ ...sessionForm, nom: v })}
+                onChange={(v: string) => setSessionForm({ ...sessionForm, nom: v })}
                 placeholder="Ex: Promotion 2026 - Hôtellerie"
               />
               <div className="flex flex-col gap-1.5">
                 <label className="text-label-sm font-semibold">Métier</label>
                 <select
                   value={sessionForm.metier}
-                  onChange={(e) => setSessionForm({ ...sessionForm, metier: e.target.value })}
+                  onChange={(e: any) => setSessionForm({ ...sessionForm, metier: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-lg bg-surface-container-low text-body-sm"
                 >
-                  {Object.entries(METIERS_LABEL).map(([k, v]) => (
+                  {Object.entries(METIERS_LABEL).map(([k, v]: [string, any]) => (
                     <option key={k} value={k}>{v}</option>
                   ))}
                 </select>
@@ -337,13 +337,13 @@ export default function AdminFpdPage() {
                   label="Date début *"
                   type="date"
                   value={sessionForm.dateDebut}
-                  onChange={(v) => setSessionForm({ ...sessionForm, dateDebut: v })}
+                  onChange={(v: string) => setSessionForm({ ...sessionForm, dateDebut: v })}
                 />
                 <Input
                   label="Date fin *"
                   type="date"
                   value={sessionForm.dateFin}
-                  onChange={(v) => setSessionForm({ ...sessionForm, dateFin: v })}
+                  onChange={(v: string) => setSessionForm({ ...sessionForm, dateFin: v })}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -351,12 +351,12 @@ export default function AdminFpdPage() {
                   label="Places"
                   type="number"
                   value={sessionForm.placesTotales}
-                  onChange={(v) => setSessionForm({ ...sessionForm, placesTotales: Number(v) })}
+                  onChange={(v: string) => setSessionForm({ ...sessionForm, placesTotales: Number(v) })}
                 />
                 <Input
                   label="Lieu"
                   value={sessionForm.lieuFormation}
-                  onChange={(v) => setSessionForm({ ...sessionForm, lieuFormation: v })}
+                  onChange={(v: string) => setSessionForm({ ...sessionForm, lieuFormation: v })}
                   placeholder="CCI Fianarantsoa"
                 />
               </div>
@@ -403,14 +403,14 @@ function StatCard({ icon, label, value, accent }: any) {
   );
 }
 
-function Input({ label, value, onChange, type = "text", placeholder = "" }: any) {
+function Input({ label, value, onChange, type = "text", placeholder = "" }: { label: string, value: any, onChange: (v: string) => void, type?: string, placeholder?: string }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-label-sm font-semibold text-on-surface">{label}</label>
       <input
         type={type}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e: any) => onChange(e.target.value)}
         placeholder={placeholder}
         className="w-full px-4 py-2.5 rounded-lg bg-surface-container-low text-body-sm focus:ring-2 focus:ring-primary/20 outline-none"
       />
