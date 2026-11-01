@@ -82,8 +82,20 @@ import { SearchModule } from "./search/search.module";
           QuizFPD,
           ResultatFPD,
         ],
-        synchronize: false,
+        // ⚠️ ATTENTION : On passe synchronize à true POUR LE DÉPLOIEMENT INITIAL
+        // (pour créer les tables sur Neon). Une fois les tables créées, tu pourras le repasser à false.
+        synchronize: true, 
         logging: ["error", "warn"],
+        
+        // ✅ CONFIGURATION SSL POUR NEON (INDISPENSABLE)
+        ssl: {
+          rejectUnauthorized: false,
+        },
+        extra: {
+          ssl: {
+            rejectUnauthorized: false,
+          },
+        },
       }),
     }),
 
