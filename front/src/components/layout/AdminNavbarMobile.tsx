@@ -9,14 +9,10 @@ import Icon from "@/components/ui/Icon";
 
 const menuItems = [
   { href: "/admin/dashboard", icon: "dashboard", label: "Tableau de bord" },
-  {
-    href: "/admin/inscriptions",
-    icon: "folder",
-    label: "Demandes & Utilisateurs",
-  },
-  { href: "/admin/cotisations", icon: "payment", label: "Cotisations" },
+  { href: "/admin/inscriptions", icon: "folder", label: "Demandes & Utilisateurs" },
   { href: "/admin/diagnostics", icon: "chart", label: "Diagnostics" },
   { href: "/admin/documents", icon: "folder_open", label: "Documents" },
+  { href: "/admin/fpd", icon: "school", label: "Formation FPD" },
 ];
 
 export default function AdminNavbarMobile() {
@@ -31,12 +27,10 @@ export default function AdminNavbarMobile() {
     ? `${user.prenom?.[0] || ""}${user.nom?.[0] || ""}`.toUpperCase()
     : "?";
 
-  /* Fermer au changement de route */
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
 
-  /* Escape ferme */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
@@ -45,7 +39,6 @@ export default function AdminNavbarMobile() {
     return () => document.removeEventListener("keydown", onKey);
   }, []);
 
-  /* Bloquer scroll body quand drawer ouvert */
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => {
@@ -55,9 +48,7 @@ export default function AdminNavbarMobile() {
 
   return (
     <>
-      {/* ============================================
-          HEADER MOBILE FLOTTANT
-          ============================================ */}
+      {/* HEADER MOBILE FLOTTANT */}
       <header
         className="
           lg:hidden
@@ -117,11 +108,7 @@ export default function AdminNavbarMobile() {
         </div>
       </header>
 
-      
-
-      {/* ============================================
-          OVERLAY
-          ============================================ */}
+      {/* OVERLAY */}
       <div
         onClick={() => setOpen(false)}
         aria-hidden="true"
@@ -136,9 +123,7 @@ export default function AdminNavbarMobile() {
         `}
       />
 
-      {/* ============================================
-          DRAWER MOBILE
-          ============================================ */}
+      {/* DRAWER MOBILE */}
       <aside
         id="admin-mobile-drawer"
         role="dialog"

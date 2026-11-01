@@ -41,7 +41,7 @@ const menuItems: MenuItem[] = [
     label: "Documents",
     roles: ["ADMIN"],
   },
-    {
+  {
     href: "/admin/fpd",
     icon: "school",
     label: "Formation FPD",
