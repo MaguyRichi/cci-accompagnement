@@ -101,7 +101,6 @@ export class AuthService {
     } as any);
     await this.demandeRepository.save(demande);
 
-    // Notification interne au nouvel utilisateur (dans l'app, PAS email)
     try {
       await this.notificationsService.create({
         utilisateurId: user.id,
@@ -114,7 +113,6 @@ export class AuthService {
       this.logger.error("Erreur notification inscription:", err);
     }
 
-    // Notification aux admins
     try {
       const admins = await this.userRepository.find({
         where: { role: "ADMIN" as any, actif: true },
@@ -180,7 +178,6 @@ export class AuthService {
     } as any);
     await this.demandeRepository.save(demande);
 
-    // Notification interne user
     try {
       await this.notificationsService.create({
         utilisateurId: user.id,
@@ -193,7 +190,6 @@ export class AuthService {
       this.logger.error("Erreur notification inscription mentor:", err);
     }
 
-    // Notification aux admins
     try {
       const admins = await this.userRepository.find({
         where: { role: "ADMIN" as any, actif: true },
@@ -351,25 +347,14 @@ export class AuthService {
   }
 
   /* ============================================
-     ENVOYER L'EMAIL D'ACTIVATION (appelé par admin après validation)
+     ENVOYER L'EMAIL D'ACTIVATION 
      ============================================ */
   async envoyerEmailActivation(userId: number) {
     const user = await this.usersService.findById(userId);
     if (!user) throw new NotFoundException("Utilisateur introuvable");
 
-    if (!user.tokenActivation) {
-      // Régénérer un token si inexistant
-      const tokenActivation = crypto.randomBytes(32).toString("hex");
-      const tokenExpireAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      await this.usersService.update(user.id, {
-        tokenActivation,
-        tokenExpireAt,
-      });
-      user.tokenActivation = tokenActivation;
-    }
-
-    // Vérifier que le token n'est pas expiré
-    if (user.tokenExpireAt && user.tokenExpireAt < new Date()) {
+    // Si pas de token ou token expiré → régénérer
+    if (!user.tokenActivation || (user.tokenExpireAt && user.tokenExpireAt < new Date())) {
       const tokenActivation = crypto.randomBytes(32).toString("hex");
       const tokenExpireAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       await this.usersService.update(user.id, {
@@ -399,9 +384,11 @@ export class AuthService {
       this.logger.log(` Email d'activation envoyé à ${user.email}`);
     } catch (err) {
       this.logger.error(` Erreur envoi email activation ${user.email}:`, err);
-      throw new BadRequestException(
-        "Erreur lors de l'envoi de l'email d'activation",
-      );
+      // ✅ On log l'erreur mais on ne bloque plus la validation de l'admin
+      return { 
+        message: `Compte validé, mais l'email n'a pas pu être envoyé (problème serveur SMTP). L'utilisateur devra demander un renvoi.`,
+        warning: true 
+      };
     }
 
     return { message: `Email d'activation envoyé à ${user.email}` };
