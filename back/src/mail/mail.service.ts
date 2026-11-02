@@ -8,20 +8,19 @@ export class MailService {
   private readonly logger = new Logger(MailService.name);
 
   constructor(private readonly config: ConfigService) {
-    // ✅ On force le typage avec "as any" pour accepter le paramètre "family" (IPv4)
-    // qui n'est pas reconnu par défaut dans les types TypeScript de Nodemailer.
+    // ✅ Typage "any" pour accepter l'option family: 4 (IPv4)
     const transporterOptions: any = {
       host: this.config.get("MAIL_HOST", "smtp.gmail.com"),
       port: Number(this.config.get("MAIL_PORT", 465)),
-      secure: true, // true pour le port 465 (SSL direct)
+      secure: true, // true pour le port 465
       auth: {
         user: this.config.get("MAIL_USER"),
         pass: this.config.get("MAIL_PASSWORD"),
       },
-      family: 4, // ✅ Force l'utilisation d'IPv4 (contourne l'erreur ENETUNREACH d'IPv6 sur Render)
-      connectionTimeout: 10000, // Timeout de 10s pour éviter de bloquer le serveur indéfiniment
+      family: 4, // Force IPv4 pour contourner l'erreur ENETUNREACH sur Render
+      connectionTimeout: 10000,
       tls: {
-        rejectUnauthorized: false, // Souvent nécessaire sur les environnements cloud (Render)
+        rejectUnauthorized: false,
       },
     };
 
@@ -90,6 +89,41 @@ export class MailService {
       this.logger.log(`Email de reset envoyé à ${to}`);
     } catch (error) {
       this.logger.error(`Erreur d'envoi d'email reset à ${to}`, error);
+      throw error;
+    }
+  }
+
+  // ✅ FONCTION AJOUTÉE POUR CORRIGER L'ERREUR DE BUILD
+  async sendNotificationEmail(
+    to: string,
+    titre: string,
+    message: string,
+    lien?: string,
+  ) {
+    try {
+      const mailOptions = {
+        from: `"CCI Haute Matsiatra" <${this.config.get("MAIL_FROM")}>`,
+        to,
+        subject: titre,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+            <h2 style="color: #1e3a5f; text-align: center;">${titre}</h2>
+            <p>${message}</p>
+            ${lien ? `
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${lien}" style="background-color: #1e3a5f; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Voir sur la plateforme</a>
+              </div>
+            ` : ""}
+            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+            <p style="font-size: 12px; color: #999; text-align: center;">CCI Haute Matsiatra - Plateforme d'accompagnement des PME</p>
+          </div>
+        `,
+      };
+
+      await this.transporter.sendMail(mailOptions);
+      this.logger.log(`Email de notification envoyé à ${to}`);
+    } catch (error) {
+      this.logger.error(`Erreur d'envoi d'email de notification à ${to}`, error);
       throw error;
     }
   }
