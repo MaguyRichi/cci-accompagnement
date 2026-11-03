@@ -1,30 +1,17 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import * as nodemailer from "nodemailer";
+import { BrevoClient } from "@getbrevo/brevo";
 
 @Injectable()
 export class MailService {
-  private transporter: nodemailer.Transporter;
   private readonly logger = new Logger(MailService.name);
+  private brevo: BrevoClient;
 
   constructor(private readonly config: ConfigService) {
-    // ✅ Typage "any" pour accepter l'option family: 4 (IPv4)
-    const transporterOptions: any = {
-      host: this.config.get("MAIL_HOST", "smtp.gmail.com"),
-      port: Number(this.config.get("MAIL_PORT", 465)),
-      secure: true, // true pour le port 465
-      auth: {
-        user: this.config.get("MAIL_USER"),
-        pass: this.config.get("MAIL_PASSWORD"),
-      },
-      family: 4, // Force IPv4 pour contourner l'erreur ENETUNREACH sur Render
-      connectionTimeout: 10000,
-      tls: {
-        rejectUnauthorized: false,
-      },
-    };
-
-    this.transporter = nodemailer.createTransport(transporterOptions);
+    // Initialisation du client Brevo avec la clé API
+    this.brevo = new BrevoClient({
+      apiKey: this.config.get("BREVO_API_KEY"),
+    });
   }
 
   async sendActivationEmail(
@@ -34,11 +21,9 @@ export class MailService {
     lienActivation: string,
   ) {
     try {
-      const mailOptions = {
-        from: `"CCI Haute Matsiatra" <${this.config.get("MAIL_FROM")}>`,
-        to,
+      await this.brevo.transactionalEmails.sendTransacEmail({
         subject: "Activation de votre compte - CCI Haute Matsiatra",
-        html: `
+        htmlContent: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
             <h2 style="color: #1e3a5f; text-align: center;">Bienvenue sur la plateforme CCI</h2>
             <p>Bonjour <strong>${nomComplet}</strong>,</p>
@@ -52,10 +37,10 @@ export class MailService {
             <p style="font-size: 12px; color: #999; text-align: center;">CCI Haute Matsiatra - Plateforme d'accompagnement des PME</p>
           </div>
         `,
-      };
-
-      await this.transporter.sendMail(mailOptions);
-      this.logger.log(`Email d'activation envoyé à ${to}`);
+        sender: { name: "CCI Haute Matsiatra", email: this.config.get("MAIL_FROM") },
+        to: [{ email: to, name: nomComplet }],
+      });
+      this.logger.log(`Email d'activation envoyé à ${to} via Brevo`);
     } catch (error) {
       this.logger.error(`Erreur d'envoi d'email d'activation à ${to}`, error);
       throw error;
@@ -68,11 +53,9 @@ export class MailService {
     lienReset: string,
   ) {
     try {
-      const mailOptions = {
-        from: `"CCI Haute Matsiatra" <${this.config.get("MAIL_FROM")}>`,
-        to,
+      await this.brevo.transactionalEmails.sendTransacEmail({
         subject: "Réinitialisation de votre mot de passe - CCI",
-        html: `
+        htmlContent: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
             <h2 style="color: #1e3a5f; text-align: center;">Réinitialisation de mot de passe</h2>
             <p>Bonjour <strong>${nomComplet}</strong>,</p>
@@ -83,17 +66,16 @@ export class MailService {
             <p style="font-size: 12px; color: #666;">Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
           </div>
         `,
-      };
-
-      await this.transporter.sendMail(mailOptions);
-      this.logger.log(`Email de reset envoyé à ${to}`);
+        sender: { name: "CCI Haute Matsiatra", email: this.config.get("MAIL_FROM") },
+        to: [{ email: to, name: nomComplet }],
+      });
+      this.logger.log(`Email de reset envoyé à ${to} via Brevo`);
     } catch (error) {
       this.logger.error(`Erreur d'envoi d'email reset à ${to}`, error);
       throw error;
     }
   }
 
-  // ✅ FONCTION AJOUTÉE POUR CORRIGER L'ERREUR DE BUILD
   async sendNotificationEmail(
     to: string,
     titre: string,
@@ -101,11 +83,9 @@ export class MailService {
     lien?: string,
   ) {
     try {
-      const mailOptions = {
-        from: `"CCI Haute Matsiatra" <${this.config.get("MAIL_FROM")}>`,
-        to,
+      await this.brevo.transactionalEmails.sendTransacEmail({
         subject: titre,
-        html: `
+        htmlContent: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
             <h2 style="color: #1e3a5f; text-align: center;">${titre}</h2>
             <p>${message}</p>
@@ -118,10 +98,10 @@ export class MailService {
             <p style="font-size: 12px; color: #999; text-align: center;">CCI Haute Matsiatra - Plateforme d'accompagnement des PME</p>
           </div>
         `,
-      };
-
-      await this.transporter.sendMail(mailOptions);
-      this.logger.log(`Email de notification envoyé à ${to}`);
+        sender: { name: "CCI Haute Matsiatra", email: this.config.get("MAIL_FROM") },
+        to: [{ email: to }],
+      });
+      this.logger.log(`Email de notification envoyé à ${to} via Brevo`);
     } catch (error) {
       this.logger.error(`Erreur d'envoi d'email de notification à ${to}`, error);
       throw error;
