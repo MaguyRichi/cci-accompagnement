@@ -10,48 +10,32 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService);
 
-  // ============================================
-  // CONFIGURATION CLOUDINARY (avec SHA-256)
-  // ============================================
-  const cloudName = config.get('CLOUDINARY_CLOUD_NAME');
-  const apiKey = config.get('CLOUDINARY_API_KEY');
-  const apiSecret = config.get('CLOUDINARY_API_SECRET');
-
+  // ✅ CONFIGURATION CLOUDINARY
   cloudinary.config({
-    cloud_name: cloudName,
-    api_key: apiKey,
-    api_secret: apiSecret,
-    signature_algorithm: 'sha256', // ✅ Force l'utilisation de SHA-256
+    cloud_name: config.get('CLOUDINARY_CLOUD_NAME'),
+    api_key: config.get('CLOUDINARY_API_KEY'),
+    api_secret: config.get('CLOUDINARY_API_SECRET'),
+    signature_algorithm: 'sha256', // ⚠️ Essaie 'sha1' si ça ne marche pas
   });
 
-  console.log('🔑 Cloudinary configuré avec succès (SHA-256).');
+  console.log('🔑 Cloudinary configuré (algorithme: sha256)');
 
-  // ============================================
-  // CONFIGURATION NESTJS
-  // ============================================
   app.setGlobalPrefix('api');
-
   app.enableCors({
     origin: config.get('FRONTEND_URL') || 'http://localhost:3000',
     credentials: true,
   });
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
-
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  }));
   app.useStaticAssets(join(process.cwd(), 'uploads'), {
     prefix: '/uploads/',
   });
 
   const port = config.get('PORT') || 3001;
   await app.listen(port);
-
-  console.log(`🚀 API NestJS : http://localhost:${port}/api`);
-  console.log(`📁 Uploads     : http://localhost:${port}/uploads/`);
+  console.log(`🚀 API : http://localhost:${port}/api`);
 }
 bootstrap();
