@@ -1,21 +1,12 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
 import { Readable } from 'stream';
-import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UploadService {
   private readonly logger = new Logger(UploadService.name);
 
-  constructor(private readonly configService: ConfigService) {
-    // ✅ Initialisation directe de Cloudinary ici
-    cloudinary.config({
-      cloud_name: this.configService.get<string>('CLOUDINARY_CLOUD_NAME'),
-      api_key: this.configService.get<string>('CLOUDINARY_API_KEY'),
-      api_secret: this.configService.get<string>('CLOUDINARY_API_SECRET'),
-    });
-  }
-
+  // ✅ La fonction principale qui envoie vers Cloudinary
   async saveFile(file: Express.Multer.File, folder: string = 'logo') {
     if (!file) {
       this.logger.error('❌ Aucun fichier reçu');
@@ -33,7 +24,7 @@ export class UploadService {
             return reject(new InternalServerErrorException(error.message));
           }
           if (!result) {
-            this.logger.error('❌ Cloudinary pas de résultat');
+            this.logger.error('❌ Cloudinary n\'a renvoyé aucun résultat');
             return reject(new InternalServerErrorException("Échec de l'upload"));
           }
 
@@ -48,7 +39,7 @@ export class UploadService {
       );
       
       if (!file.buffer) {
-        this.logger.error('❌ Le fichier n\'a pas de buffer');
+        this.logger.error('❌ Le fichier n\'a pas de buffer (vérifie memoryStorage)');
         return reject(new InternalServerErrorException("Buffer manquant"));
       }
       
@@ -56,11 +47,12 @@ export class UploadService {
     });
   }
 
+  // ✅ Méthodes spécifiques qui utilisent saveFile
   async saveCciLogo(file: Express.Multer.File) {
     return this.saveFile(file, 'cci-logo');
   }
 
   async getCciLogoUrl() {
-    return { url: null };
+    return { url: null }; 
   }
 }
