@@ -5,6 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { Demande } from './entities/demande.entity';
+import { Entreprise } from '../entreprises/entities/entreprise.entity'; // ✅ Import ajouté
 import { DemandesService } from './demandes.service';
 import { DemandesController } from './demandes.controller';
 
@@ -13,7 +14,8 @@ import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Demande]),
+    // ✅ Ajout de Entreprise dans le forFeature
+    TypeOrmModule.forFeature([Demande, Entreprise]), 
     NotificationsModule,
     AuthModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
