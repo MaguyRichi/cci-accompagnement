@@ -7,15 +7,12 @@ import {
   Get,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { UploadService, UploadCategorie } from './upload.service';
+import { UploadService } from './upload.service'; // ✅ On a enlevé UploadCategorie
 
 @Controller('upload')
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 
-  // ----------------------------------------------------
-  // ROUTE GÉNÉRIQUE
-  // ----------------------------------------------------
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   async upload(
@@ -25,9 +22,6 @@ export class UploadController {
     return this.uploadService.saveFile(file, 'document');
   }
 
-  // ----------------------------------------------------
-  // ROUTES SPÉCIFIQUES
-  // ----------------------------------------------------
   @Post('avatar')
   @UseInterceptors(FileInterceptor('file'))
   async uploadAvatar(@UploadedFile() file: Express.Multer.File) {

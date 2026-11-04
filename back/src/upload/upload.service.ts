@@ -1,34 +1,36 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
 import { Readable } from 'stream';
-import { ConfigService } from '@nestjs/config';
-
-export type UploadCategorie =
-  | 'logo'
-  | 'couverture'
-  | 'produit'
-  | 'document'
-  | 'publication'
-  | 'avatar'
-  | 'cci-logo';
 
 @Injectable()
 export class UploadService {
-  constructor(private readonly configService: ConfigService) {}
+  private readonly logger = new Logger(UploadService.name);
 
-  // ✅ La fonction qui remplace l'ancienne logique et envoie vers Cloudinary
-  async saveFile(file: Express.Multer.File, folder: UploadCategorie = 'logo') {
+  async saveFile(file: Express.Multer.File, folder: string = 'logo') {
+    // ✅ Vérification 1 : Le fichier est-il bien reçu ?
+    if (!file) {
+      this.logger.error('❌ Aucun fichier reçu par Multer');
+      throw new InternalServerErrorException('Aucun fichier fourni');
+    }
+    
+    this.logger.log(`📤 Upload vers Cloudinary - Dossier: ${folder}, Taille: ${file.size} bytes`);
+
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         { folder: `cci-accompagnement/${folder}` },
         (error, result) => {
+          // ✅ Vérification 2 : Cloudinary a-t-il renvoyé une erreur ?
           if (error) {
+            this.logger.error('❌ Erreur Cloudinary:', error);
             return reject(new InternalServerErrorException(error.message));
           }
+          
           if (!result) {
+            this.logger.error('❌ Cloudinary n\'a renvoyé aucun résultat');
             return reject(new InternalServerErrorException("Échec de l'upload"));
           }
 
+          this.logger.log(`✅ Upload réussi: ${result.secure_url}`);
           resolve({
             url: result.secure_url,
             filename: result.public_id,
@@ -38,19 +40,21 @@ export class UploadService {
         }
       );
       
+      // ✅ Vérification 3 : Le buffer existe-t-il ?
+      if (!file.buffer) {
+        this.logger.error('❌ Le fichier n\'a pas de buffer (vérifie memoryStorage)');
+        return reject(new InternalServerErrorException("Buffer manquant"));
+      }
+      
       Readable.from(file.buffer).pipe(uploadStream);
     });
   }
 
-  // ✅ Pour le logo CCI (utilisé par l'admin)
   async saveCciLogo(file: Express.Multer.File) {
     return this.saveFile(file, 'cci-logo');
   }
 
-  // ✅ Récupérer l'URL du logo CCI (puisqu'on ne stocke plus en local)
   async getCciLogoUrl() {
-    // On peut retourner l'URL statique hébergée sur Cloudinary ou une URL par défaut
-    // Si tu avais un moyen de le stocker en base, adapte cette partie.
-    return { url: null }; 
+    return { url: null };
   }
 }
