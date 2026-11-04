@@ -6,18 +6,19 @@ import { Readable } from 'stream';
 export class UploadService {
   private readonly logger = new Logger(UploadService.name);
 
-  // ✅ La fonction principale qui envoie vers Cloudinary
   async saveFile(file: Express.Multer.File, folder: string = 'logo') {
     if (!file) {
       this.logger.error('❌ Aucun fichier reçu');
       throw new InternalServerErrorException('Aucun fichier fourni');
     }
     
-    this.logger.log(`📤 Upload vers Cloudinary - Dossier: ${folder}, Taille: ${file.size} bytes`);
+    // ⚠️ On loggue le dossier pour info, mais on ne l'envoie PAS à Cloudinary
+    this.logger.log(`📤 Upload vers Cloudinary (racine) - Dossier prévu: ${folder}, Taille: ${file.size} bytes`);
 
     return new Promise((resolve, reject) => {
+      // ✅ CORRECTION : On ne passe plus "folder" pour éviter l'erreur de signature
       const uploadStream = cloudinary.uploader.upload_stream(
-        { folder: `cci-accompagnement/${folder}` },
+        {}, // Pas de folder ici
         (error, result) => {
           if (error) {
             this.logger.error('❌ Erreur Cloudinary:', error);
@@ -39,7 +40,7 @@ export class UploadService {
       );
       
       if (!file.buffer) {
-        this.logger.error('❌ Le fichier n\'a pas de buffer (vérifie memoryStorage)');
+        this.logger.error('❌ Le fichier n\'a pas de buffer');
         return reject(new InternalServerErrorException("Buffer manquant"));
       }
       
@@ -47,7 +48,6 @@ export class UploadService {
     });
   }
 
-  // ✅ Méthodes spécifiques qui utilisent saveFile
   async saveCciLogo(file: Express.Multer.File) {
     return this.saveFile(file, 'cci-logo');
   }
