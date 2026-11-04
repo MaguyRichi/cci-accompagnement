@@ -25,6 +25,7 @@ import { EvaluerDemandeDto } from "./dto/evaluer-demande.dto";
 import { NotificationsService } from "../notifications/notifications.service";
 import { TypeNotificationEnum } from "../notifications/entities/notification.entity";
 import { AuthService } from "../auth/auth.service";
+import { Entreprise } from "../entreprises/entities/entreprise.entity"; // ✅ Import ajouté
 
 @Injectable()
 export class DemandesService {
@@ -33,6 +34,8 @@ export class DemandesService {
   constructor(
     @InjectRepository(Demande)
     private readonly demandeRepository: Repository<Demande>,
+    @InjectRepository(Entreprise) // ✅ Injection ajoutée
+    private readonly entrepriseRepository: Repository<Entreprise>,
     private readonly notificationsService: NotificationsService,
     private readonly authService: AuthService,
   ) {}
@@ -469,23 +472,25 @@ export class DemandesService {
     demande.statut = StatutDemandeEnum.ACCEPTEE;
     const saved = await this.demandeRepository.save(demande);
 
-    // ✅ NOUVEAU : Si c'est un mentorat, on assigne automatiquement le mentor à l'entreprise
+    // ✅ CORRECTION ICI : Assignation automatique du mentor via le repository de l'entreprise
     if (
       saved.type === TypeDemandeEnum.MENTORAT &&
       saved.cibleId &&
       saved.entrepriseId
     ) {
       try {
-        await this.demandeRepository.manager
-          .createQueryBuilder()
-          .update("entreprises")
-          .set({ mentorId: saved.cibleId })
-          .where("id = :id", { id: saved.entrepriseId })
-          .execute();
+        const entreprise = await this.entrepriseRepository.findOne({
+          where: { id: saved.entrepriseId },
+        });
 
-        this.logger.log(
-          `✅ Mentor ${saved.cibleId} assigné à l'entreprise ${saved.entrepriseId}`,
-        );
+        if (entreprise) {
+          entreprise.mentorId = saved.cibleId;
+          await this.entrepriseRepository.save(entreprise);
+          
+          this.logger.log(
+            `✅ Mentor ${saved.cibleId} assigné à l'entreprise ${saved.entrepriseId} (${entreprise.raisonSociale})`,
+          );
+        }
       } catch (err) {
         this.logger.error(
           `❌ Erreur assignation mentor entreprise ${saved.entrepriseId}:`,
