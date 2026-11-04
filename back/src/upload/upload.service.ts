@@ -1,162 +1,64 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import { promises as fs } from 'fs';
-import { join, extname } from 'path';
-import { randomBytes } from 'crypto';
-
-export enum UploadCategorie {
-  LOGO = 'logos',
-  COUVERTURE = 'couvertures',
-  PRODUIT = 'produits',
-  DOCUMENT = 'documents',
-  PUBLICATION = 'publications',
-  AVATAR = 'avatars',
-  SYSTEM = 'system',
-}
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { v2 as cloudinary } from 'cloudinary';
+import { Readable } from 'stream';
 
 @Injectable()
 export class UploadService {
-  private readonly rootDir = join(process.cwd(), 'uploads');
+  
+  async uploadToCloudinary(file: Express.Multer.File, folder: string) {
+    return new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { folder: `cci-accompagnement/${folder}` },
+        (error, result) => {
+          // ✅ 1. On gère l'erreur renvoyée par Cloudinary
+          if (error) {
+            return reject(new InternalServerErrorException(error.message));
+          }
+          
+          // ✅ 2. On vérifie que 'result' existe bien (corrige l'erreur TS)
+          if (!result) {
+            return reject(new InternalServerErrorException("Échec de l'upload sur Cloudinary"));
+          }
 
-  private readonly allowedMimes = [
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-    'image/gif',
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  ];
-
-  private readonly imageMimes = [
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-    'image/gif',
-  ];
-
-  private readonly maxSize = 10 * 1024 * 1024; // 10 MB
-  private readonly maxImageSize = 5 * 1024 * 1024; // 5 MB
-
-  /* ============================================
-     SAUVEGARDER UN FICHIER
-     ============================================ */
-  async saveFile(
-    file: Express.Multer.File,
-    categorie: UploadCategorie,
-  ): Promise<{ url: string; filename: string; size: number; mime: string }> {
-    if (!file) {
-      throw new BadRequestException('Aucun fichier fourni');
-    }
-
-    const isImageCat =
-      categorie === UploadCategorie.AVATAR ||
-      categorie === UploadCategorie.SYSTEM;
-
-    const maxSize = isImageCat ? this.maxImageSize : this.maxSize;
-    const allowed = isImageCat ? this.imageMimes : this.allowedMimes;
-
-    if (file.size > maxSize) {
-      throw new BadRequestException(
-        `Fichier trop volumineux (max ${maxSize / 1024 / 1024} Mo)`,
+          // 3. On renvoie les infos en toute sécurité
+          resolve({
+            url: result.secure_url,
+            filename: result.public_id,
+            size: file.size,
+            mime: file.mimetype,
+          });
+        }
       );
-    }
-
-    if (!allowed.includes(file.mimetype)) {
-      throw new BadRequestException(
-        `Type de fichier non autorisé : ${file.mimetype}`,
-      );
-    }
-
-    const ext = extname(file.originalname);
-    const uniqueName = `${Date.now()}-${randomBytes(6).toString('hex')}${ext}`;
-
-    const dir = join(this.rootDir, categorie);
-    const filepath = join(dir, uniqueName);
-
-    await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(filepath, file.buffer);
-
-    const url = `/uploads/${categorie}/${uniqueName}`;
-
-    return {
-      url,
-      filename: uniqueName,
-      size: file.size,
-      mime: file.mimetype,
-    };
+      
+      Readable.from(file.buffer).pipe(uploadStream);
+    });
   }
 
-  /* ============================================
-     SAUVEGARDER LE LOGO CCI (nom fixe, écrasé)
-     ============================================ */
-  async saveCciLogo(
-    file: Express.Multer.File,
-  ): Promise<{ url: string; filename: string; size: number; mime: string }> {
-    if (!file) {
-      throw new BadRequestException('Aucun fichier fourni');
-    }
-
-    if (file.size > this.maxImageSize) {
-      throw new BadRequestException(
-        `Fichier trop volumineux (max ${this.maxImageSize / 1024 / 1024} Mo)`,
-      );
-    }
-
-    if (!this.imageMimes.includes(file.mimetype)) {
-      throw new BadRequestException(
-        `Image requise (JPG, PNG, WEBP, GIF). Reçu : ${file.mimetype}`,
-      );
-    }
-
-    const dir = join(this.rootDir, UploadCategorie.SYSTEM);
-    const filename = 'cci-logo.png'; // toujours le même nom
-    const filepath = join(dir, filename);
-
-    await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(filepath, file.buffer);
-
-    // Ajouter un timestamp pour casser le cache navigateur
-    const url = `/uploads/system/${filename}?v=${Date.now()}`;
-
-    return {
-      url,
-      filename,
-      size: file.size,
-      mime: file.mimetype,
-    };
+  async uploadLogo(file: Express.Multer.File) {
+    return this.uploadToCloudinary(file, 'logos');
   }
 
-  /* ============================================
-     VÉRIFIER SI LE LOGO CCI EXISTE
-     ============================================ */
-  async getCciLogoUrl(): Promise<{ url: string | null }> {
-    const filepath = join(
-      this.rootDir,
-      UploadCategorie.SYSTEM,
-      'cci-logo.png',
-    );
-    try {
-      await fs.access(filepath);
-      const stat = await fs.stat(filepath);
-      return { url: `/uploads/system/cci-logo.png?v=${stat.mtimeMs}` };
-    } catch {
-      return { url: null };
-    }
+  async uploadCouverture(file: Express.Multer.File) {
+    return this.uploadToCloudinary(file, 'couvertures');
   }
 
-  /* ============================================
-     SUPPRIMER UN FICHIER
-     ============================================ */
-  async deleteFile(url: string): Promise<{ deleted: boolean }> {
-    try {
-      const relativePath = url.replace(/^\/+/, '').split('?')[0];
-      const filepath = join(process.cwd(), relativePath);
-      await fs.unlink(filepath);
-      return { deleted: true };
-    } catch {
-      return { deleted: false };
-    }
+  async uploadProduit(file: Express.Multer.File) {
+    return this.uploadToCloudinary(file, 'produits');
+  }
+
+  async uploadDocument(file: Express.Multer.File) {
+    return this.uploadToCloudinary(file, 'documents');
+  }
+
+  async uploadPublication(file: Express.Multer.File) {
+    return this.uploadToCloudinary(file, 'publications');
+  }
+
+  async uploadAvatar(file: Express.Multer.File) {
+    return this.uploadToCloudinary(file, 'avatars');
+  }
+
+  async uploadCciLogo(file: Express.Multer.File) {
+    return this.uploadToCloudinary(file, 'cci-logo');
   }
 }

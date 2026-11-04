@@ -1,45 +1,32 @@
 import { Module } from '@nestjs/common';
 import { MulterModule } from '@nestjs/platform-express';
-import { PassportModule } from '@nestjs/passport';
-import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-
+import { memoryStorage } from 'multer';
 import { UploadController } from './upload.controller';
 import { UploadService } from './upload.service';
-import { AuthModule } from '../auth/auth.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { v2 as cloudinary } from 'cloudinary';
 
 @Module({
   imports: [
-    AuthModule, // fournit JwtStrategy + AuthService
-    PassportModule.register({ defaultStrategy: 'jwt' }), // ⬅️ pour AuthGuard('jwt')
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        secret: config.get('JWT_SECRET'),
-        signOptions: { expiresIn: config.get('JWT_EXPIRES_IN', '7d') },
-      }),
-    }),
     MulterModule.register({
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (req: any, file: any, cb: any) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          const name = file.originalname
-            .replace(ext, '')
-            .replace(/[^a-zA-Z0-9]/g, '_')
-            .substring(0, 30);
-          cb(null, `${name}-${uniqueSuffix}${ext}`);
-        },
-      }),
+      // ✅ On utilise la mémoire vive au lieu du disque (qui s'efface sur Render)
+      storage: memoryStorage(),
     }),
   ],
   controllers: [UploadController],
-  providers: [UploadService],
-  exports: [UploadService],
+  providers: [
+    UploadService,
+    {
+      provide: 'CLOUDINARY',
+      useFactory: (configService: ConfigService) => {
+        return cloudinary.config({
+          cloud_name: configService.get('CLOUDINARY_CLOUD_NAME'),
+          api_key: configService.get('CLOUDINARY_API_KEY'),
+          api_secret: configService.get('CLOUDINARY_API_SECRET'),
+        });
+      },
+      inject: [ConfigService],
+    },
+  ],
 })
 export class UploadModule {}
