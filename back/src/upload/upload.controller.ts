@@ -7,7 +7,7 @@ import {
   Get,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { UploadService } from './upload.service'; // ✅ On a enlevé UploadCategorie
+import { UploadService } from './upload.service';
 
 @Controller('upload')
 export class UploadController {
@@ -15,9 +15,7 @@ export class UploadController {
 
   @Post()
   @UseInterceptors(FileInterceptor('file'))
-  async upload(
-    @UploadedFile() file: Express.Multer.File,
-  ) {
+  async upload(@UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('Aucun fichier fourni');
     return this.uploadService.saveFile(file, 'document');
   }

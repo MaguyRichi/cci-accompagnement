@@ -3,7 +3,7 @@ import { MulterModule } from '@nestjs/platform-express';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { memoryStorage } from 'multer'; // ✅ On utilise la mémoire au lieu du disque
+import { memoryStorage } from 'multer';
 
 import { UploadController } from './upload.controller';
 import { UploadService } from './upload.service';
@@ -11,8 +11,8 @@ import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
-    AuthModule, // fournit JwtStrategy + AuthService
-    PassportModule.register({ defaultStrategy: 'jwt' }), // pour AuthGuard('jwt')
+    AuthModule,
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -22,7 +22,6 @@ import { AuthModule } from '../auth/auth.module';
       }),
     }),
     MulterModule.register({
-      // ✅ On garde le fichier en mémoire vive pour l'envoyer à Cloudinary
       storage: memoryStorage(),
     }),
   ],
