@@ -799,18 +799,14 @@ function DecouvrirTab() {
                         {collab.entreprise?.raisonSociale || "PME"}
                       </span>
                     </div>
-                    {/* ✅ NOUVEAU BOUTON MESSAGE */}
-                    <button 
-                      onClick={() => {
-                        // Ouvre la modale de contact avec l'entreprise de la collaboration
-                        if (collab.entreprise) {
-                          setMessageTarget(collab.entreprise);
-                        }
-                      }}
+                    
+                    {/* ✅ BOUTON CONTACTER QUI REDIRIGE VERS LA PAGE ENTREPRISE */}
+                    <Link 
+                      href={`/entreprise/${collab.entrepriseId || collab.entreprise?.id}`}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors shadow-sm"
                     >
                       <Icon name="chat" size={14} /> Contacter
-                    </button>
+                    </Link>
                   </div>
                 </div>
               ))}
