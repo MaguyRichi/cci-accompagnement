@@ -32,19 +32,12 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 export class EntreprisesController {
   constructor(private readonly entreprisesService: EntreprisesService) {}
 
-  /* ============================================
-     MON ENTREPRISE (DIRIGEANT + ADMIN + MENTOR)
-     ============================================ */
   @Get('me')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('DIRIGEANT', 'ADMIN', 'MENTOR')
   getMyEntreprise(@CurrentUser('id') userId: number) {
     return this.entreprisesService.getMyEntreprise(userId);
   }
-
-  /* ============================================
-     ANNUAIRE DES RESSORTISSANTS (PUBLIC)
-     ============================================ */
 
   @Get('annuaire')
   findAnnuaire(@Query() query: QueryAnnuaireDto) {
@@ -56,9 +49,6 @@ export class EntreprisesController {
     return this.entreprisesService.getAnnuaireStats();
   }
 
-  /**
-   * Export CSV de l'annuaire (admin uniquement)
-   */
   @Get('annuaire/export.csv')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
@@ -109,7 +99,7 @@ export class EntreprisesController {
       ),
     ];
 
-    const csv = '\uFEFF' + csvRows.join('\n'); // BOM pour Excel
+    const csv = '\uFEFF' + csvRows.join('\n');
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader(
@@ -118,10 +108,6 @@ export class EntreprisesController {
     );
     res.send(csv);
   }
-
-  /* ============================================
-     ROUTES PUBLIQUES EXISTANTES
-     ============================================ */
 
   @Get('public')
   findAllPublic(@Query() query: QueryEntrepriseDto) {
@@ -142,10 +128,6 @@ export class EntreprisesController {
   findOnePublic(@Param('id', ParseIntPipe) id: number) {
     return this.entreprisesService.findOne(id, true);
   }
-
-  /* ============================================
-     ROUTES PROTÉGÉES EXISTANTES
-     ============================================ */
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -189,6 +171,19 @@ export class EntreprisesController {
     return this.entreprisesService.ajouterProduit(id, dto, user);
   }
 
+  // ✅ NOUVEAU : mise à jour d'un produit
+  @Patch(':id/produits/:index')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('DIRIGEANT', 'ADMIN')
+  modifierProduit(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('index', ParseIntPipe) index: number,
+    @Body() dto: CreateProduitDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.entreprisesService.modifierProduit(id, index, dto, user);
+  }
+
   @Delete(':id/produits/:index')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('DIRIGEANT', 'ADMIN')
@@ -199,10 +194,6 @@ export class EntreprisesController {
   ) {
     return this.entreprisesService.supprimerProduit(id, index, user);
   }
-
-  /* ============================================
-     ROUTES ADMIN EXISTANTES
-     ============================================ */
 
   @Patch(':id/verifier')
   @UseGuards(JwtAuthGuard, RolesGuard)

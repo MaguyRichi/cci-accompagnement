@@ -28,6 +28,7 @@ export default function ProfilPage() {
 
   /* États modal produit */
   const [showModalProduit, setShowModalProduit] = useState(false);
+  const [editProduitIndex, setEditProduitIndex] = useState<number | null>(null);
   const [produitNom, setProduitNom] = useState("");
   const [produitPrix, setProduitPrix] = useState("");
   const [produitCategorie, setProduitCategorie] = useState("");
@@ -105,17 +106,58 @@ export default function ProfilPage() {
     }
   };
 
-  const handleAjouterProduit = async () => {
+  // ✅ Contrôles stricts
+  const handleTextOnly = (value: string, setter: (val: string) => void) => {
+    const filtered = value.replace(/[^a-zA-ZÀ-ÿ\s-]/g, "");
+    setter(filtered);
+  };
+
+  const handlePrice = (value: string) => {
+    // Autorise les chiffres et les espaces
+    const filtered = value.replace(/[^0-9\s]/g, "");
+    setProduitPrix(filtered);
+  };
+
+  const handleOuvrirModaleAjout = () => {
+    setEditProduitIndex(null);
+    setProduitNom("");
+    setProduitPrix("");
+    setProduitCategorie("");
+    setProduitImage(null);
+    setShowModalProduit(true);
+  };
+
+  const handleOuvrirModaleEdition = (p: Produit, index: number) => {
+    setEditProduitIndex(index);
+    setProduitNom(p.nom);
+    setProduitPrix(p.prix || "");
+    setProduitCategorie(p.categorie || "");
+    setProduitImage(p.image || null);
+    setShowModalProduit(true);
+  };
+
+  const handleSaveProduit = async () => {
     if (!entreprise || !produitNom.trim()) return;
 
     setIsSaving(true);
     try {
-      const updated = await entreprisesApi.ajouterProduit(entreprise.id, {
+      const payload = {
         nom: produitNom,
         prix: produitPrix || undefined,
         categorie: produitCategorie || undefined,
         image: produitImage || undefined,
-      });
+      };
+
+      let updated;
+      if (editProduitIndex !== null) {
+        updated = await entreprisesApi.modifierProduit(
+          entreprise.id,
+          editProduitIndex,
+          payload,
+        );
+      } else {
+        updated = await entreprisesApi.ajouterProduit(entreprise.id, payload);
+      }
       setEntreprise(updated);
 
       setShowModalProduit(false);
@@ -123,10 +165,23 @@ export default function ProfilPage() {
       setProduitPrix("");
       setProduitCategorie("");
       setProduitImage(null);
+      setEditProduitIndex(null);
     } catch (error) {
-      console.error("Erreur ajout produit:", error);
+      console.error("Erreur ajout/modification produit:", error);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSupprimerProduit = async (index: number) => {
+    if (!entreprise) return;
+    if (!confirm("Voulez-vous vraiment supprimer ce produit ?")) return;
+
+    try {
+      const updated = await entreprisesApi.supprimerProduit(entreprise.id, index);
+      setEntreprise(updated);
+    } catch (error) {
+      console.error("Erreur suppression produit:", error);
     }
   };
 
@@ -167,7 +222,6 @@ export default function ProfilPage() {
   }
 
   /* ---------- AFFICHAGE ---------- */
-  // ✅ Cast en any pour éviter l'erreur "Property 'badges' does not exist"
   const mesBadges: any[] = (user as any)?.badges || [];
 
   const tabs = [
@@ -718,7 +772,7 @@ export default function ProfilPage() {
                 </h2>
               </div>
               <button
-                onClick={() => setShowModalProduit(true)}
+                onClick={handleOuvrirModaleAjout}
                 className="flex items-center gap-1 px-4 py-2 rounded-lg bg-primary-container text-on-primary text-label-md hover:bg-primary transition-colors shadow-sm"
               >
                 <Icon name="plus" size={18} />
@@ -746,23 +800,44 @@ export default function ProfilPage() {
                 {entreprise.listeProduits.map((p: Produit, i: number) => (
                   <div
                     key={i}
-                    className="rounded-xl bg-surface-container-low flex flex-col overflow-hidden"
+                    className="rounded-xl bg-surface-container-low flex flex-col overflow-hidden group"
                   >
-                    {p.image ? (
-                      <img
-                        src={getImageUrl(p.image) || ""}
-                        alt={p.nom}
-                        className="w-full h-40 object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-40 bg-surface-container flex items-center justify-center">
-                        <Icon
-                          name="inventory"
-                          size={60}
-                          className="text-outline"
+                    <div className="relative">
+                      {p.image ? (
+                        <img
+                          src={getImageUrl(p.image) || ""}
+                          alt={p.nom}
+                          className="w-full h-40 object-cover"
                         />
+                      ) : (
+                        <div className="w-full h-40 bg-surface-container flex items-center justify-center">
+                          <Icon
+                            name="inventory"
+                            size={60}
+                            className="text-outline"
+                          />
+                        </div>
+                      )}
+                      
+                      {/* ✅ Boutons d'action sur l'image */}
+                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleOuvrirModaleEdition(p, i)}
+                          className="w-8 h-8 rounded-lg bg-white/90 backdrop-blur-sm text-primary flex items-center justify-center shadow-sm hover:bg-white"
+                          title="Modifier"
+                        >
+                          <Icon name="edit" size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleSupprimerProduit(i)}
+                          className="w-8 h-8 rounded-lg bg-white/90 backdrop-blur-sm text-error flex items-center justify-center shadow-sm hover:bg-white"
+                          title="Supprimer"
+                        >
+                          <Icon name="close" size={14} />
+                        </button>
                       </div>
-                    )}
+                    </div>
+
                     <div className="p-4 flex flex-col gap-2">
                       <span className="text-label-sm text-outline uppercase">
                         {p.categorie || "Produit"}
@@ -812,7 +887,6 @@ export default function ProfilPage() {
                     key={index} 
                     className="p-6 rounded-[1.5rem] bg-gradient-to-br from-primary/5 to-surface-container-lowest border border-black/5 shadow-sm flex flex-col gap-4 relative overflow-hidden"
                   >
-                    {/* Fioriture décorative en fond */}
                     <div className="absolute -right-6 -top-6 text-primary/5">
                       <Icon name="workspace_premium" size={120} />
                     </div>
@@ -863,12 +937,14 @@ export default function ProfilPage() {
           </div>
         )}
 
-        {/* ============ MODAL AJOUT PRODUIT ============ */}
+        {/* ============ MODAL PRODUIT (Ajout / Édition) ============ */}
         {showModalProduit && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/40 backdrop-blur-sm p-4">
             <div className="w-full max-w-lg bg-surface-container-lowest rounded-[1.5rem] shadow-xl p-6 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between">
-                <h2 className="text-title-lg text-primary">Nouveau produit</h2>
+                <h2 className="text-title-lg text-primary">
+                  {editProduitIndex !== null ? "Modifier le produit" : "Nouveau produit"}
+                </h2>
                 <button
                   onClick={() => setShowModalProduit(false)}
                   className="p-2 rounded-lg text-outline hover:bg-surface-container transition-colors"
@@ -891,7 +967,7 @@ export default function ProfilPage() {
                 </label>
                 <input
                   value={produitNom}
-                  onChange={(e) => setProduitNom(e.target.value)}
+                  onChange={(e) => handleTextOnly(e.target.value, setProduitNom)}
                   className="w-full px-4 py-2.5 rounded-xl bg-surface-container-low text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary-container"
                   placeholder="Ex: Étole Landy Betsileo"
                 />
@@ -904,7 +980,7 @@ export default function ProfilPage() {
                   </label>
                   <input
                     value={produitPrix}
-                    onChange={(e) => setProduitPrix(e.target.value)}
+                    onChange={(e) => handlePrice(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl bg-surface-container-low text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary-container"
                     placeholder="Ex: 180 000 MGA"
                   />
@@ -915,7 +991,7 @@ export default function ProfilPage() {
                   </label>
                   <input
                     value={produitCategorie}
-                    onChange={(e) => setProduitCategorie(e.target.value)}
+                    onChange={(e) => handleTextOnly(e.target.value, setProduitCategorie)}
                     className="w-full px-4 py-2.5 rounded-xl bg-surface-container-low text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary-container"
                     placeholder="Ex: Artisanat"
                   />
@@ -930,7 +1006,7 @@ export default function ProfilPage() {
                   Annuler
                 </button>
                 <button
-                  onClick={handleAjouterProduit}
+                  onClick={handleSaveProduit}
                   disabled={isSaving || !produitNom.trim()}
                   className="px-6 py-2.5 rounded-xl bg-primary text-on-primary text-label-md font-semibold hover:bg-primary-container transition-colors shadow-sm disabled:opacity-50 flex items-center gap-1"
                 >
@@ -946,7 +1022,7 @@ export default function ProfilPage() {
                   ) : (
                     <>
                       <Icon name="check" size={18} />
-                      <span>Ajouter</span>
+                      <span>{editProduitIndex !== null ? "Modifier" : "Ajouter"}</span>
                     </>
                   )}
                 </button>

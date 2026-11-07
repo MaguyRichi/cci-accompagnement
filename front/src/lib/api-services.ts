@@ -462,6 +462,16 @@ export const entreprisesApi = {
     return parseEntreprise(data);
   },
 
+  // ✅ NOUVEAU : modification d'un produit
+  async modifierProduit(
+    id: number,
+    index: number,
+    payload: Produit,
+  ): Promise<Entreprise> {
+    const { data } = await api.patch(`/entreprises/${id}/produits/${index}`, payload);
+    return parseEntreprise(data);
+  },
+
   async supprimerProduit(id: number, index: number): Promise<Entreprise> {
     const { data } = await api.delete(`/entreprises/${id}/produits/${index}`);
     return parseEntreprise(data);
@@ -1390,18 +1400,16 @@ export const fpdApi = {
     }
   },
 
-    async createQuiz(moduleId: number, payload: { question: string; options: string[]; bonneReponse: number; ordre?: number }) {
+  async createQuiz(moduleId: number, payload: { question: string; options: string[]; bonneReponse: number; ordre?: number }) {
     const { data } = await api.post(`/fpd/quizzes/${moduleId}`, payload);
     return data;
   },
 
-  // ✅ NOUVEAU : mise à jour d'un quiz
   async updateQuiz(quizId: number, payload: { question?: string; options?: string[]; bonneReponse?: number; ordre?: number }) {
     const { data } = await api.patch(`/fpd/quizzes/${quizId}`, payload);
     return data;
   },
 
-  // ✅ NOUVEAU : suppression d'un quiz
   async deleteQuiz(quizId: number) {
     const { data } = await api.delete(`/fpd/quizzes/${quizId}`);
     return data;
@@ -1431,7 +1439,8 @@ export const fpdApi = {
       return [];
     }
   },
-    async createCandidature(payload: {
+
+  async createCandidature(payload: {
     nom: string;
     prenom: string;
     email: string;

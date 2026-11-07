@@ -97,12 +97,10 @@ export class EntreprisesService {
 
     const qb = this.entrepriseRepository.createQueryBuilder('e');
 
-    // Uniquement les entreprises actives
     qb.andWhere('e.statut = :statut', {
       statut: StatutEntrepriseEnum.ACTIF,
     });
 
-    // Filtres
     if (query.secteur) {
       qb.andWhere('e.secteur = :secteur', { secteur: query.secteur });
     }
@@ -128,7 +126,6 @@ export class EntreprisesService {
       qb.andWhere('e.verifie = false');
     }
 
-    // Recherche texte
     if (query.q) {
       qb.andWhere(
         `(e.raisonSociale ILIKE :q
@@ -141,7 +138,6 @@ export class EntreprisesService {
       );
     }
 
-    // ⚠️ Tri avec les NOMS DE PROPRIÉTÉS (camelCase)
     switch (query.sort) {
       case 'nom':
         qb.orderBy('e.raisonSociale', 'ASC');
@@ -185,7 +181,6 @@ export class EntreprisesService {
       where: { statut: StatutEntrepriseEnum.ACTIF },
     });
 
-    // Répartition par secteur
     const parSecteur = await this.entrepriseRepository
       .createQueryBuilder('e')
       .select('e.secteur', 'secteur')
@@ -197,7 +192,6 @@ export class EntreprisesService {
       .orderBy('count', 'DESC')
       .getRawMany();
 
-    // Répartition par ville (top 10)
     const parVille = await this.entrepriseRepository
       .createQueryBuilder('e')
       .select('e.ville', 'ville')
@@ -210,7 +204,6 @@ export class EntreprisesService {
       .limit(10)
       .getRawMany();
 
-    // Répartition par taille
     const parTaille = await this.entrepriseRepository
       .createQueryBuilder('e')
       .select('e.taille', 'taille')
@@ -221,7 +214,6 @@ export class EntreprisesService {
       .orderBy('count', 'DESC')
       .getRawMany();
 
-    // Total vérifiées
     const verifiees = await this.entrepriseRepository.count({
       where: {
         statut: StatutEntrepriseEnum.ACTIF,
@@ -449,6 +441,31 @@ export class EntreprisesService {
       ...(entreprise.listeProduits || []),
       dto,
     ];
+    return this.entrepriseRepository.save(entreprise);
+  }
+
+  /* ============================================
+     MODIFIER UN PRODUIT
+     ============================================ */
+  async modifierProduit(id: number, index: number, dto: CreateProduitDto, user: any) {
+    const entreprise = await this.findOne(id);
+
+    if (user.role !== 'ADMIN' && entreprise.dirigeantId !== user.id) {
+      throw new ForbiddenException(
+        'Vous ne pouvez pas modifier les produits de cette entreprise',
+      );
+    }
+
+    if (index < 0 || index >= (entreprise.listeProduits || []).length) {
+      throw new BadRequestException('Index de produit invalide');
+    }
+
+    // Mise à jour du produit à l'index donné
+    entreprise.listeProduits[index] = {
+      ...entreprise.listeProduits[index],
+      ...dto,
+    };
+
     return this.entrepriseRepository.save(entreprise);
   }
 

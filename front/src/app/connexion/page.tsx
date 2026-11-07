@@ -207,7 +207,8 @@ export default function ConnexionPage() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  // ✅ Contrôle strict : bloque les espaces
+                  onChange={(e) => setEmail(e.target.value.replace(/\s/g, ""))}
                   required
                   disabled={isLoading}
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-surface-container-low text-on-surface text-body-md placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary-container transition-all disabled:opacity-50"

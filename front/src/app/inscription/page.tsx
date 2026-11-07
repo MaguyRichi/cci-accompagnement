@@ -43,6 +43,31 @@ export default function InscriptionPage() {
   const [bioMentor, setBioMentor] = useState("");
   const [disponibilite, setDisponibilite] = useState("TEMPS_PARTIEL");
 
+  // ✅ Fonctions de contrôle strict avant saisie
+  const handleTextOnly = (value: string, setter: (val: string) => void) => {
+    // Autorise uniquement les lettres (accents inclus) et les tirets/espaces
+    const filtered = value.replace(/[^a-zA-ZÀ-ÿ\s-]/g, "");
+    setter(filtered);
+  };
+
+  const handlePhone = (value: string) => {
+    // Autorise les chiffres, +, espaces et tirets
+    const filtered = value.replace(/[^0-9+\s-]/g, "");
+    setTelephone(filtered);
+  };
+
+  const handleNumberOnly = (value: string, setter: (val: number | "") => void) => {
+    if (value === "") {
+      setter("");
+      return;
+    }
+    // Autorise uniquement les chiffres
+    const filtered = value.replace(/[^0-9]/g, "");
+    if (filtered !== "") {
+      setter(Number(filtered));
+    }
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -347,7 +372,8 @@ export default function InscriptionPage() {
                         <input
                           type="text"
                           value={nom}
-                          onChange={(e) => setNom(e.target.value)}
+                          // ✅ Contrôle strict
+                          onChange={(e) => handleTextOnly(e.target.value, setNom)}
                           required
                           className="w-full px-4 py-2.5 rounded-lg bg-surface-container-low text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary-container"
                           placeholder="Ex: Rakoto"
@@ -360,7 +386,8 @@ export default function InscriptionPage() {
                         <input
                           type="text"
                           value={prenom}
-                          onChange={(e) => setPrenom(e.target.value)}
+                          // ✅ Contrôle strict
+                          onChange={(e) => handleTextOnly(e.target.value, setPrenom)}
                           required
                           className="w-full px-4 py-2.5 rounded-lg bg-surface-container-low text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary-container"
                           placeholder="Ex: Jean"
@@ -386,7 +413,8 @@ export default function InscriptionPage() {
                         <input
                           type="tel"
                           value={telephone}
-                          onChange={(e) => setTelephone(e.target.value)}
+                          // ✅ Contrôle strict
+                          onChange={(e) => handlePhone(e.target.value)}
                           required
                           className="w-full px-4 py-2.5 rounded-lg bg-surface-container-low text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary-container"
                           placeholder="+261 34 12 345 67"
@@ -511,13 +539,8 @@ export default function InscriptionPage() {
                         <input
                           type="number"
                           value={effectif}
-                          onChange={(e) =>
-                            setEffectif(
-                              e.target.value === ""
-                                ? ""
-                                : Number(e.target.value),
-                            )
-                          }
+                          // ✅ Contrôle strict (chiffres uniquement)
+                          onChange={(e) => handleNumberOnly(e.target.value, setEffectif)}
                           className="w-full px-4 py-2.5 rounded-lg bg-surface-container-low text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary-container"
                           placeholder="14"
                         />
@@ -597,13 +620,8 @@ export default function InscriptionPage() {
                         <input
                           type="number"
                           value={experienceMentor}
-                          onChange={(e) =>
-                            setExperienceMentor(
-                              e.target.value === ""
-                                ? ""
-                                : Number(e.target.value),
-                            )
-                          }
+                          // ✅ Contrôle strict (chiffres uniquement)
+                          onChange={(e) => handleNumberOnly(e.target.value, setExperienceMentor)}
                           required
                           className="w-full px-4 py-2.5 rounded-lg bg-surface-container-low text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary-container"
                           placeholder="15"

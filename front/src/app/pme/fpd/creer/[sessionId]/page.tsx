@@ -11,7 +11,7 @@ interface Quiz {
   question: string;
   options: string[];
   bonneReponse: number;
-  ordre?: number; // ✅ AJOUTÉ
+  ordre?: number;
 }
 
 interface Module {
@@ -43,6 +43,13 @@ export default function CreerFormationPage() {
   const [quizOptions, setQuizOptions] = useState(["", "", "", ""]);
   const [quizBonne, setQuizBonne] = useState(0);
   const [isSavingQuiz, setIsSavingQuiz] = useState(false);
+
+  // ✅ Contrôle strict pour les champs de texte
+  const handleTextOnly = (value: string, setter: (val: string) => void) => {
+    // Autorise les lettres, chiffres, espaces, et ponctuations de base
+    const filtered = value.replace(/[^a-zA-Z0-9À-ÿ\s.,?!'’-]/g, "");
+    setter(filtered);
+  };
 
   const loadModules = async () => {
     if (!sessionIdValid) {
@@ -299,7 +306,6 @@ export default function CreerFormationPage() {
                             title="Supprimer ce quiz"
                             className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
                           >
-                            {/* ✅ Icône corrigée */}
                             <Icon name="close" size={16} />
                           </button>
                         </div>
@@ -332,7 +338,8 @@ export default function CreerFormationPage() {
               <label className="text-label-sm font-semibold">Titre du module *</label>
               <input
                 value={moduleTitre}
-                onChange={(e) => setModuleTitre(e.target.value)}
+                // ✅ Contrôle strict
+                onChange={(e) => handleTextOnly(e.target.value, setModuleTitre)}
                 placeholder="Ex: Introduction à l'hôtellerie"
                 className="w-full px-4 py-2.5 rounded-lg bg-surface-container-low text-body-sm focus:ring-2 focus:ring-primary/20 outline-none"
               />
@@ -341,7 +348,8 @@ export default function CreerFormationPage() {
               <label className="text-label-sm font-semibold">Description (optionnelle)</label>
               <textarea
                 value={moduleDesc}
-                onChange={(e) => setModuleDesc(e.target.value)}
+                // ✅ Contrôle strict
+                onChange={(e) => handleTextOnly(e.target.value, setModuleDesc)}
                 rows={3}
                 placeholder="Décrivez ce que les apprenants vont découvrir..."
                 className="w-full px-4 py-2.5 rounded-lg bg-surface-container-low text-body-sm resize-none focus:ring-2 focus:ring-primary/20 outline-none"
@@ -384,7 +392,6 @@ export default function CreerFormationPage() {
 
             {editingQuiz && (
               <div className="p-3 rounded-xl bg-amber-50 text-amber-700 text-body-sm flex items-start gap-2">
-                {/* ✅ Icône corrigée */}
                 <Icon name="info" size={16} className="shrink-0 mt-0.5" />
                 <span>
                   ⚠️ En modifiant ce quiz, tous les résultats précédents seront effacés. Les
@@ -397,7 +404,8 @@ export default function CreerFormationPage() {
               <label className="text-label-sm font-semibold">Question *</label>
               <input
                 value={quizQuestion}
-                onChange={(e) => setQuizQuestion(e.target.value)}
+                // ✅ Contrôle strict
+                onChange={(e) => handleTextOnly(e.target.value, setQuizQuestion)}
                 placeholder="Ex: Qu'est-ce que le yield management ?"
                 className="w-full px-4 py-2.5 rounded-lg bg-surface-container-low text-body-sm focus:ring-2 focus:ring-primary/20 outline-none"
               />
@@ -415,10 +423,13 @@ export default function CreerFormationPage() {
                   />
                   <input
                     value={opt}
+                    // ✅ Contrôle strict
                     onChange={(e) => {
                       const copy = [...quizOptions];
-                      copy[i] = e.target.value;
-                      setQuizOptions(copy);
+                      handleTextOnly(e.target.value, (val) => {
+                        copy[i] = val;
+                        setQuizOptions(copy);
+                      });
                     }}
                     placeholder={`Réponse ${i + 1}`}
                     className="flex-1 px-4 py-2 rounded-lg bg-surface-container-low text-body-sm focus:ring-2 focus:ring-primary/20 outline-none"

@@ -6,6 +6,7 @@ import {
   conversationsApi,
   usersApi,
   getImageUrl,
+  uploadApi,
   Conversation,
   Message,
   ChatContact,
@@ -15,16 +16,20 @@ import Icon from "@/components/ui/Icon";
 export default function MessagesPage() {
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [contacts, setContacts] = useState<ChatContact[]>([]);
-  // On ne sélectionne PAS de conversation par défaut pour respecter le comportement mobile
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageInput, setMessageInput] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [searchContact, setSearchContact] = useState("");
   const [activeFilter, setActiveFilter] = useState<"tous" | "mentorat" | "collab">("tous");
@@ -39,7 +44,6 @@ export default function MessagesPage() {
         ]);
         if (convs.status === "fulfilled") {
           setConversations(convs.value.data);
-          // Sur PC on peut sélectionner la première par défaut, sur mobile le CSS masquera le chat
           if (convs.value.data.length > 0 && window.innerWidth >= 768) {
             setSelectedConv(convs.value.data[0]);
           }
@@ -111,24 +115,51 @@ export default function MessagesPage() {
   };
 
   const handleSend = async () => {
-    if (!messageInput.trim() || !selectedConv || isSending) return;
+    if ((!messageInput.trim() && !selectedFile) || !selectedConv || isSending) return;
     setIsSending(true);
+
     try {
+      let fileUrl = undefined;
+
+      if (selectedFile) {
+        setIsUploading(true);
+        const uploadRes = await uploadApi.upload(selectedFile, "publication");
+        fileUrl = uploadRes.url;
+        setIsUploading(false);
+      }
+
       const newMsg = await conversationsApi.envoyerMessage(selectedConv.id, {
-        contenu: messageInput,
-        type: "TEXTE",
+        contenu: messageInput || undefined,
+        type: selectedFile ? (selectedFile.type.includes("image") ? "IMAGE" : "FICHIER") : "TEXTE",
+        image: selectedFile?.type.includes("image") ? fileUrl : undefined,
+        fichier: !selectedFile?.type.includes("image") ? fileUrl : undefined,
       });
+
       setMessages((prev) => [...prev, newMsg]);
       setMessageInput("");
+      setSelectedFile(null);
 
       const res = await conversationsApi.getMesConversations({ limit: 100 });
       setConversations(res.data);
     } catch (error) {
       console.error("Erreur envoi:", error);
-      alert("Erreur lors de l'envoi");
+      alert("Erreur lors de l'envoi du message ou du fichier");
     } finally {
       setIsSending(false);
+      setIsUploading(false);
     }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Le fichier est trop volumineux (max 5 Mo)");
+      return;
+    }
+
+    setSelectedFile(file);
   };
 
   const getInitials = (text: string) =>
@@ -176,7 +207,6 @@ export default function MessagesPage() {
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-6 max-w-[1440px] mx-auto relative overflow-hidden h-[calc(100vh-80px)] flex flex-col">
       
-      {/* ================= BACKGROUND PREMIUM ================= */}
       <div className="absolute inset-0 top-0 h-full -z-10 pointer-events-none overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
         <div className="absolute -top-40 -left-40 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] opacity-60" />
@@ -185,7 +215,6 @@ export default function MessagesPage() {
 
       <div className="flex flex-col w-full h-full space-y-4 z-10">
         
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 shrink-0">
           <div>
             <div className="flex items-center gap-2">
@@ -206,11 +235,8 @@ export default function MessagesPage() {
           </button>
         </div>
 
-        {/* ================= LAYOUT CONTENEUR FLOTTANT ================= */}
         <div className="w-full flex-1 min-h-0 bg-white/70 backdrop-blur-2xl border border-white/60 rounded-[2rem] shadow-2xl shadow-slate-300/30 flex overflow-hidden relative">
           
-          {/* Sidebar : Liste des conversations */}
-          {/* Caché sur mobile si une conv est ouverte */}
           <section 
             className={`w-full md:w-[350px] shrink-0 bg-white/40 flex-col h-full border-r border-slate-200/60 
               ${selectedConv ? "hidden md:flex" : "flex"}`}
@@ -313,8 +339,6 @@ export default function MessagesPage() {
             </div>
           </section>
 
-          {/* Main : Zone de Chat */}
-          {/* Sur mobile, caché si aucune conv n'est sélectionnée */}
           <main 
             className={`flex-1 flex-col h-full bg-slate-50/50 relative 
               ${!selectedConv ? "hidden md:flex" : "flex"}`}
@@ -333,7 +357,6 @@ export default function MessagesPage() {
                 <header className="px-4 sm:px-6 py-4 bg-white/80 backdrop-blur-md flex items-center justify-between shadow-sm z-10 border-b border-slate-200/60">
                   <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                     
-                    {/* ✅ BOUTON RETOUR (Mobile uniquement) */}
                     <button 
                       onClick={() => setSelectedConv(null)}
                       className="md:hidden p-2 -ml-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
@@ -402,7 +425,23 @@ export default function MessagesPage() {
                                     : "bg-white text-slate-800 border border-slate-200/60 rounded-2xl rounded-bl-sm"
                                 }`}
                               >
-                                {msg.contenu}
+                                {msg.contenu && <p>{msg.contenu}</p>}
+                                
+                                {msg.image && (
+                                  <img src={getImageUrl(msg.image) || ""} alt="Fichier" className="mt-2 rounded-lg max-w-full h-auto" />
+                                )}
+
+                                {msg.fichier && (
+                                  <a 
+                                    href={getImageUrl(msg.fichier) || "#"} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className={`mt-2 flex items-center gap-2 p-2 rounded-lg ${isMine ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-800"}`}
+                                  >
+                                    <Icon name="description" size={16} />
+                                    <span className="text-xs font-bold underline truncate">Télécharger le document</span>
+                                  </a>
+                                )}
                               </div>
                               <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 mt-1.5 px-1 uppercase tracking-wider">
                                 <span>
@@ -422,7 +461,38 @@ export default function MessagesPage() {
                 </div>
 
                 <footer className="p-3 sm:p-4 bg-white/60 backdrop-blur-md border-t border-slate-200/60">
+                  {selectedFile && (
+                    <div className="mb-2 p-2 bg-slate-100 rounded-xl flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Icon name="description" size={16} className="text-slate-500" />
+                        <span className="text-xs font-semibold text-slate-700 truncate max-w-[200px]">{selectedFile.name}</span>
+                      </div>
+                      <button onClick={() => setSelectedFile(null)} className="p-1 hover:bg-slate-200 rounded-md">
+                        <Icon name="close" size={14} className="text-slate-500" />
+                      </button>
+                    </div>
+                  )}
+
                   <div className="flex items-end gap-2 sm:gap-3 bg-white p-1.5 sm:p-2 rounded-2xl border border-slate-200/80 shadow-sm focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
+                    
+                    {/* ✅ Bouton Trombone (avec l'icône "plus" pour éviter l'erreur) */}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isSending || isUploading}
+                      className="p-2 text-slate-400 hover:text-primary transition-colors shrink-0"
+                      title="Joindre un fichier"
+                    >
+                      <Icon name="plus" size={20} />
+                    </button>
+                    
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      className="hidden" 
+                      accept="image/*,application/pdf"
+                      onChange={handleFileSelect}
+                    />
+
                     <textarea
                       value={messageInput}
                       onChange={(e) => setMessageInput(e.target.value)}
@@ -432,17 +502,17 @@ export default function MessagesPage() {
                           handleSend();
                         }
                       }}
-                      disabled={isSending}
+                      disabled={isSending || isUploading}
                       className="flex-1 bg-transparent resize-none text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none p-2 sm:p-2.5 max-h-32"
                       placeholder="Tapez un message..."
                       rows={1}
                     />
                     <button
                       onClick={handleSend}
-                      disabled={isSending || !messageInput.trim()}
+                      disabled={isSending || isUploading || (!messageInput.trim() && !selectedFile)}
                       className="p-2.5 sm:p-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors disabled:opacity-50 shrink-0 shadow-md"
                     >
-                      <Icon name={isSending ? "refresh" : "send"} size={18} className={isSending ? "animate-spin" : ""} />
+                      <Icon name={isSending || isUploading ? "refresh" : "send"} size={18} className={isSending || isUploading ? "animate-spin" : ""} />
                     </button>
                   </div>
                 </footer>
@@ -452,7 +522,6 @@ export default function MessagesPage() {
         </div>
       </div>
 
-      {/* Modal Nouvelle Conversation */}
       {showNewChatModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg bg-white/95 backdrop-blur-2xl rounded-[2rem] border border-white shadow-2xl p-6 sm:p-8 flex flex-col gap-6 max-h-[85vh]">
