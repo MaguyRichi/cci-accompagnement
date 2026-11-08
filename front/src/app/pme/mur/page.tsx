@@ -353,14 +353,12 @@ function MonMurTab() {
           ) : (
             publications.map((pub) => {
               const isLiked = (pub.likes || []).includes(user?.id || 0);
-              // ✅ Récupération de l'image de profil de l'auteur ou du logo de l'entreprise
               const authorAvatar = getImageUrl(pub.auteur?.photoProfil) || getImageUrl(pub.entreprise?.logo);
               
               return (
                 <article key={pub.id} className="bg-surface-container-lowest rounded-xl p-6 shadow-sm flex flex-col gap-4">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      {/* ✅ AFFICHAGE DE LA PHOTO OU DES INITIALES */}
                       <div className="w-11 h-11 rounded-full overflow-hidden shrink-0 bg-primary-container text-on-primary flex items-center justify-center text-title-md border border-black/5">
                         {authorAvatar ? (
                           <img src={authorAvatar} alt="" className="w-full h-full object-cover" />
@@ -763,57 +761,62 @@ function DecouvrirTab() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {collaborations.map((collab) => (
-                <div key={collab.id} className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-black/5 flex flex-col gap-3 hover:shadow-md transition-shadow relative overflow-hidden group">
-                  
-                  {/* Bandeau coloré selon le type */}
-                  <div className={`absolute top-0 left-0 w-full h-1.5 ${
-                    collab.sousType === "DEMANDE" ? "bg-blue-400" : collab.sousType === "OFFRE" ? "bg-emerald-400" : "bg-purple-400"
-                  }`} />
+              {collaborations.map((collab) => {
+                // ✅ CORRECTION ICI : On cherche l'ID partout où il pourrait se trouver
+                const targetId = collab.entreprise?.id || collab.entrepriseId || collab.cibleEntrepriseId;
+                
+                return (
+                  <div key={collab.id} className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-black/5 flex flex-col gap-3 hover:shadow-md transition-shadow relative overflow-hidden group">
+                    
+                    {/* Bandeau coloré selon le type */}
+                    <div className={`absolute top-0 left-0 w-full h-1.5 ${
+                      collab.sousType === "DEMANDE" ? "bg-blue-400" : collab.sousType === "OFFRE" ? "bg-emerald-400" : "bg-purple-400"
+                    }`} />
 
-                  <div className="flex items-center justify-between mt-1">
-                    <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${
-                      collab.sousType === "DEMANDE" ? "bg-blue-50 text-blue-700 border-blue-200" : collab.sousType === "OFFRE" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-purple-50 text-purple-700 border-purple-200"
-                    }`}>
-                      {collab.sousType}
-                    </span>
-                    <span className="text-[10px] text-outline font-medium">
-                      {new Date(collab.createdAt).toLocaleDateString("fr-FR")}
-                    </span>
-                  </div>
-
-                  <h3 className="text-title-md font-bold text-slate-900 leading-tight group-hover:text-primary transition-colors line-clamp-2">
-                    {collab.titre}
-                  </h3>
-                  
-                  <p className="text-body-sm text-slate-500 line-clamp-3">
-                    {collab.description}
-                  </p>
-
-                  <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">
-                        {collab.entreprise?.sigle?.[0] || collab.entreprise?.raisonSociale?.[0] || "P"}
-                      </div>
-                      <span className="text-xs font-semibold text-slate-700 truncate max-w-[120px]">
-                        {collab.entreprise?.raisonSociale || "PME"}
+                    <div className="flex items-center justify-between mt-1">
+                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${
+                        collab.sousType === "DEMANDE" ? "bg-blue-50 text-blue-700 border-blue-200" : collab.sousType === "OFFRE" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-purple-50 text-purple-700 border-purple-200"
+                      }`}>
+                        {collab.sousType}
+                      </span>
+                      <span className="text-[10px] text-outline font-medium">
+                        {new Date(collab.createdAt).toLocaleDateString("fr-FR")}
                       </span>
                     </div>
+
+                    <h3 className="text-title-md font-bold text-slate-900 leading-tight group-hover:text-primary transition-colors line-clamp-2">
+                      {collab.titre}
+                    </h3>
                     
-                    {/* ✅ CORRECTION FINALE : Utilisation de l'ID de l'entreprise pour rediriger vers sa page */}
-                    {collab.entreprise?.id ? (
-                      <Link 
-                        href={`/entreprise/${collab.entreprise.id}`}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors shadow-sm"
-                      >
-                        <Icon name="chat" size={14} /> Contacter
-                      </Link>
-                    ) : (
-                      <span className="text-xs text-outline italic">Indisponible</span>
-                    )}
+                    <p className="text-body-sm text-slate-500 line-clamp-3">
+                      {collab.description}
+                    </p>
+
+                    <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">
+                          {collab.entreprise?.sigle?.[0] || collab.entreprise?.raisonSociale?.[0] || "P"}
+                        </div>
+                        <span className="text-xs font-semibold text-slate-700 truncate max-w-[120px]">
+                          {collab.entreprise?.raisonSociale || "PME"}
+                        </span>
+                      </div>
+                      
+                      {/* ✅ CORRECTION ICI : Utilisation de targetId qui cherche partout */}
+                      {targetId ? (
+                        <Link 
+                          href={`/entreprise/${targetId}`}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors shadow-sm"
+                        >
+                          <Icon name="chat" size={14} /> Contacter
+                        </Link>
+                      ) : (
+                        <span className="text-xs text-outline italic">Indisponible</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
