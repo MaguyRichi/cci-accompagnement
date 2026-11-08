@@ -800,10 +800,10 @@ function DecouvrirTab() {
                       </span>
                     </div>
                     
-                    {/* ✅ CORRECTION ICI : Utilisation de dirigeantId pour contacter, et masquage si c'est notre propre collaboration */}
-                    {collab.entreprise?.dirigeantId && collab.entreprise.dirigeantId !== user?.id ? (
+                    {/* ✅ CORRECTION ICI : Utilisation de dirigeant.id via la relation chargée */}
+                    {collab.entreprise?.dirigeant?.id && collab.entreprise.dirigeant.id !== user?.id ? (
                       <Link 
-                        href={`/pme/messages?to=${collab.entreprise.dirigeantId}`}
+                        href={`/pme/messages?to=${collab.entreprise.dirigeant.id}`}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors shadow-sm"
                       >
                         <Icon name="chat" size={14} /> Contacter
