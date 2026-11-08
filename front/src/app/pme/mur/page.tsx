@@ -240,6 +240,7 @@ function MonMurTab() {
         description: collabDescription,
         sousType: collabSousType,
         visiblePubliquement: true,
+        entrepriseId: entreprise.id, // ✅ AJOUT CRUCIAL
       });
       setShowModalCollab(false);
       setCollabTitre("");
@@ -762,13 +763,11 @@ function DecouvrirTab() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {collaborations.map((collab) => {
-                // ✅ CORRECTION ICI : On cherche l'ID partout où il pourrait se trouver
                 const targetId = collab.entreprise?.id || collab.entrepriseId || collab.cibleEntrepriseId;
                 
                 return (
                   <div key={collab.id} className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-black/5 flex flex-col gap-3 hover:shadow-md transition-shadow relative overflow-hidden group">
                     
-                    {/* Bandeau coloré selon le type */}
                     <div className={`absolute top-0 left-0 w-full h-1.5 ${
                       collab.sousType === "DEMANDE" ? "bg-blue-400" : collab.sousType === "OFFRE" ? "bg-emerald-400" : "bg-purple-400"
                     }`} />
@@ -802,7 +801,6 @@ function DecouvrirTab() {
                         </span>
                       </div>
                       
-                      {/* ✅ CORRECTION ICI : Utilisation de targetId qui cherche partout */}
                       {targetId ? (
                         <Link 
                           href={`/entreprise/${targetId}`}

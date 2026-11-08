@@ -632,6 +632,8 @@ export const demandesApi = {
     secteurConcerne?: string;
     sousType?: string;
     visiblePubliquement?: boolean;
+    entrepriseId?: number;        // ✅ AJOUT ESSENTIEL
+    cibleEntrepriseId?: number;   // ✅ AJOUT ESSENTIEL
   }): Promise<Demande> {
     const { data } = await api.post("/demandes/collaboration", {
       type: "COLLABORATION",
