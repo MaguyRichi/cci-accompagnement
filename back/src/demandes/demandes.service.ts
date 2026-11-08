@@ -25,7 +25,7 @@ import { EvaluerDemandeDto } from "./dto/evaluer-demande.dto";
 import { NotificationsService } from "../notifications/notifications.service";
 import { TypeNotificationEnum } from "../notifications/entities/notification.entity";
 import { AuthService } from "../auth/auth.service";
-import { Entreprise } from "../entreprises/entities/entreprise.entity"; // ✅ Import ajouté
+import { Entreprise } from "../entreprises/entities/entreprise.entity";
 
 @Injectable()
 export class DemandesService {
@@ -34,7 +34,7 @@ export class DemandesService {
   constructor(
     @InjectRepository(Demande)
     private readonly demandeRepository: Repository<Demande>,
-    @InjectRepository(Entreprise) // ✅ Injection ajoutée
+    @InjectRepository(Entreprise)
     private readonly entrepriseRepository: Repository<Entreprise>,
     private readonly notificationsService: NotificationsService,
     private readonly authService: AuthService,
@@ -255,7 +255,8 @@ export class DemandesService {
       order: { createdAt: "DESC" },
       skip,
       take: limit,
-      relations: ["entreprise"],
+      // ✅ CORRECTION : On ajoute "entreprise.dirigeant" pour le bouton Contacter
+      relations: ["entreprise", "entreprise.dirigeant"], 
     });
 
     return {
@@ -328,7 +329,6 @@ export class DemandesService {
     demande.traiteParId = adminId;
     demande.dateTraitement = new Date();
 
-    // ✅ ACTIVER L'UTILISATEUR
     if (demande.emetteurId) {
       await this.demandeRepository.manager
         .createQueryBuilder()
@@ -338,7 +338,6 @@ export class DemandesService {
         .execute();
     }
 
-    // ✅ ACTIVER L'ENTREPRISE
     if (
       demande.type === TypeDemandeEnum.INSCRIPTION_DIRIGEANT &&
       demande.entrepriseId
@@ -472,7 +471,6 @@ export class DemandesService {
     demande.statut = StatutDemandeEnum.ACCEPTEE;
     const saved = await this.demandeRepository.save(demande);
 
-    // ✅ CORRECTION ICI : Assignation automatique du mentor via le repository de l'entreprise
     if (
       saved.type === TypeDemandeEnum.MENTORAT &&
       saved.cibleId &&
@@ -499,7 +497,6 @@ export class DemandesService {
       }
     }
 
-    // 🔔 Notifier l'émetteur
     if (saved.emetteurId && saved.emetteurId !== user.id) {
       await this.safeNotify({
         utilisateurId: saved.emetteurId,

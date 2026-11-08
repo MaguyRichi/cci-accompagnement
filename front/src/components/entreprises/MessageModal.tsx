@@ -24,6 +24,9 @@ export default function MessageModal({
 
   if (!open || !entreprise) return null;
 
+  // ✅ DEBUG : Vérifier ce qui est reçu
+  console.log("[MessageModal] entreprise reçue:", entreprise);
+
   const logoUrl = getImageUrl(entreprise.logo);
   const initials = (entreprise.sigle || entreprise.raisonSociale || "?")
     .split(" ")
@@ -36,10 +39,11 @@ export default function MessageModal({
     if (!contenu.trim()) return;
     if (!user) return;
 
-    // Le destinataire est le dirigeant de l'entreprise cible
     const destinataireId = entreprise.dirigeantId;
+    
     if (!destinataireId) {
-      setError("Impossible de contacter cette entreprise (dirigeant introuvable).");
+      console.error("[MessageModal] destinataireId manquant dans l'objet entreprise");
+      setError("Impossible de contacter cette entreprise (ID du dirigeant introuvable). Veuillez rafraîchir la page.");
       return;
     }
 
@@ -92,11 +96,7 @@ export default function MessageModal({
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-surface-container-low border border-black/5 overflow-hidden flex items-center justify-center shrink-0">
               {logoUrl ? (
-                <img
-                  src={logoUrl}
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
+                <img src={logoUrl} alt="" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full bg-primary-container text-on-primary flex items-center justify-center font-bold text-label-sm">
                   {initials}

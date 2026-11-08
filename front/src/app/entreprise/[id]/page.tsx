@@ -33,7 +33,7 @@ export default function EntrepriseDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !Number.isFinite(id)) return;
     const loadData = async () => {
       try {
         const [ent, pubs] = await Promise.allSettled([

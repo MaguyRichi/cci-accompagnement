@@ -101,10 +101,6 @@ function MonMurTab() {
   const [showModalCollab, setShowModalCollab] = useState(false);
   const [collabTitre, setCollabTitre] = useState("");
   const [collabDescription, setCollabDescription] = useState("");
-  const [collabBesoin, setCollabBesoin] = useState("");
-  const [collabVolume, setCollabVolume] = useState("");
-  const [collabLocalisation, setCollabLocalisation] = useState("");
-  const [collabSecteur, setCollabSecteur] = useState("");
   const [collabSousType, setCollabSousType] = useState("DEMANDE");
   const [isCreatingCollab, setIsCreatingCollab] = useState(false);
 
@@ -242,10 +238,6 @@ function MonMurTab() {
       await demandesApi.createCollaboration({
         titre: collabTitre,
         description: collabDescription,
-        besoinDetaille: collabBesoin || undefined,
-        volume: collabVolume || undefined,
-        localisationCible: collabLocalisation || undefined,
-        secteurConcerne: collabSecteur || entreprise.secteur,
         sousType: collabSousType,
         visiblePubliquement: true,
       });
@@ -361,12 +353,20 @@ function MonMurTab() {
           ) : (
             publications.map((pub) => {
               const isLiked = (pub.likes || []).includes(user?.id || 0);
+              // ✅ Récupération de l'image de profil de l'auteur ou du logo de l'entreprise
+              const authorAvatar = getImageUrl(pub.auteur?.photoProfil) || getImageUrl(pub.entreprise?.logo);
+              
               return (
                 <article key={pub.id} className="bg-surface-container-lowest rounded-xl p-6 shadow-sm flex flex-col gap-4">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-11 h-11 rounded-full bg-primary-container text-on-primary flex items-center justify-center text-title-md shrink-0">
-                        {getInitials(pub.entreprise?.sigle || pub.entreprise?.raisonSociale || "PME")}
+                      {/* ✅ AFFICHAGE DE LA PHOTO OU DES INITIALES */}
+                      <div className="w-11 h-11 rounded-full overflow-hidden shrink-0 bg-primary-container text-on-primary flex items-center justify-center text-title-md border border-black/5">
+                        {authorAvatar ? (
+                          <img src={authorAvatar} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          getInitials(pub.entreprise?.sigle || pub.entreprise?.raisonSociale || "PME")
+                        )}
                       </div>
                       <div className="flex flex-col min-w-0">
                         <span className="text-title-md text-on-surface truncate">
@@ -397,7 +397,7 @@ function MonMurTab() {
                         className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-colors text-label-sm ${isLiked ? "text-error" : "text-on-surface-variant hover:text-error"}`}
                       >
                         <Icon name="heart" size={18} />
-                        <span>{pub.nbLikes}</span>
+                        <span>{pub.nbLikes || 0}</span>
                       </button>
                       <button 
                         onClick={() => {
@@ -407,10 +407,10 @@ function MonMurTab() {
                         className="flex items-center gap-1 px-2 py-1 rounded-lg text-on-surface-variant hover:text-primary text-label-sm"
                       >
                         <Icon name="chat" size={18} />
-                        <span>Commentaires ({pub.nbCommentaires})</span>
+                        <span>Commentaires ({pub.nbCommentaires || 0})</span>
                       </button>
                     </div>
-                    <span className="text-code-sm text-outline">{pub.nbVues} vues</span>
+                    <span className="text-code-sm text-outline">{pub.nbVues || 0} vues</span>
                   </div>
                 </article>
               );
@@ -800,13 +800,17 @@ function DecouvrirTab() {
                       </span>
                     </div>
                     
-                    {/* ✅ BOUTON CONTACTER QUI REDIRIGE VERS LA PAGE ENTREPRISE */}
-                    <Link 
-                      href={`/entreprise/${collab.entrepriseId || collab.entreprise?.id}`}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors shadow-sm"
-                    >
-                      <Icon name="chat" size={14} /> Contacter
-                    </Link>
+                    {/* ✅ BOUTON CONTACTER VERS L'ENTREPRISE (SÉCURISÉ) */}
+                    {collab.entreprise?.id ? (
+                      <Link 
+                        href={`/entreprise/${collab.entreprise.id}`}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors shadow-sm"
+                      >
+                        <Icon name="chat" size={14} /> Contacter
+                      </Link>
+                    ) : (
+                      <span className="text-xs text-outline italic">Indisponible</span>
+                    )}
                   </div>
                 </div>
               ))}
