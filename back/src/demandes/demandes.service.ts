@@ -255,8 +255,8 @@ export class DemandesService {
       order: { createdAt: "DESC" },
       skip,
       take: limit,
-      // ✅ CORRECTION : On ajoute "entreprise.dirigeant" pour le bouton Contacter
-      relations: ["entreprise", "entreprise.dirigeant"], 
+      // ✅ CORRECTION ICI : Ajout de "entreprise.dirigeant" pour que le frontend reçoive le dirigeantId
+      relations: ["entreprise", "entreprise.dirigeant"],
     });
 
     return {
