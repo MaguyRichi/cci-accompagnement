@@ -36,6 +36,8 @@ export default function QuestionnairePage() {
         ]);
         setEntreprise(ent);
         setQuestions(qs);
+        // ✅ LOG TEMPORAIRE POUR DIAGNOSTIC
+        console.log("Questions reçues:", qs);
         if (ent) {
           try {
             const diag = await diagnosticsApi.create({
@@ -246,33 +248,44 @@ export default function QuestionnairePage() {
                 </div>
               )}
 
-              {/* ✅ CORRECTION : Accepte toutes les variantes possibles pour OUI/NON */}
-              {["OUI_NON", "BOOLEAN", "OUI/NON", "YES_NO", "OUI-NON"].includes(
-                (currentQuestion.typeReponse || "").toUpperCase()
-              ) && (
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  {[
-                    { v: true, l: "Oui", icon: "check" as const },
-                    { v: false, l: "Non", icon: "close" as const },
-                  ].map((opt) => (
-                    <button
-                      key={String(opt.v)}
-                      type="button"
-                      onClick={() => setReponse(currentQuestion.id, opt.v)}
-                      className={`flex items-center justify-center gap-3 p-4 rounded-xl transition-all ${
-                        currentReponse === opt.v
-                          ? "bg-primary-container text-on-primary shadow-sm"
-                          : "bg-surface hover:bg-surface-container text-on-surface"
-                      }`}
-                    >
-                      <Icon name={opt.icon} size={28} />
-                      <span className="text-title-md font-semibold">
-                        {opt.l}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
+              {/* ✅ DÉTECTION ROBUSTE OUI/NON */}
+              {(() => {
+                const type = (currentQuestion.typeReponse || "").toUpperCase();
+                const options = (currentQuestion.options || []).map((o: any) => String(o).toUpperCase());
+                const isOuiNon =
+                  type.includes("OUI") ||
+                  type.includes("NON") ||
+                  type === "BOOLEAN" ||
+                  type === "YES_NO" ||
+                  (options.includes("OUI") && options.includes("NON"));
+                
+                if (!isOuiNon) return null;
+                
+                return (
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    {[
+                      { v: true, l: "Oui", icon: "check" as const },
+                      { v: false, l: "Non", icon: "close" as const },
+                    ].map((opt) => (
+                      <button
+                        key={String(opt.v)}
+                        type="button"
+                        onClick={() => setReponse(currentQuestion.id, opt.v)}
+                        className={`flex items-center justify-center gap-3 p-4 rounded-xl transition-all ${
+                          currentReponse === opt.v
+                            ? "bg-primary-container text-on-primary shadow-sm"
+                            : "bg-surface hover:bg-surface-container text-on-surface"
+                        }`}
+                      >
+                        <Icon name={opt.icon} size={28} />
+                        <span className="text-title-md font-semibold">
+                          {opt.l}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
 
               {currentQuestion.typeReponse === "TEXTE" && (
                 <textarea
