@@ -246,7 +246,10 @@ export default function QuestionnairePage() {
                 </div>
               )}
 
-              {currentQuestion.typeReponse === "OUI_NON" && (
+              {/* ✅ CORRECTION : Accepte toutes les variantes possibles pour OUI/NON */}
+              {["OUI_NON", "BOOLEAN", "OUI/NON", "YES_NO", "OUI-NON"].includes(
+                (currentQuestion.typeReponse || "").toUpperCase()
+              ) && (
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   {[
                     { v: true, l: "Oui", icon: "check" as const },
